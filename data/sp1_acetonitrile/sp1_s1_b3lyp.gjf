@@ -1,0 +1,12 @@
+%nprocshared=24
+%mem=20GB
+%oldchk=sp1_gs_b3lyp.chk
+%chk=sp1_s1_b3lyp.chk
+#p CAM-B3LYP/def2TZVP EmpiricalDispersion=GD3BJ SCRF(PCM,Solvent=acetonitrile) TD(Singlets,NStates=5, root=1) opt guess=(read) geom=(allcheck) gfinput
+
+
+
+
+
+
+

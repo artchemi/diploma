@@ -5,6 +5,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import Rbf
 from scipy.constants import physical_constants
+from energydiagram import ED
+from matplotlib.gridspec import GridSpec
 
 
 def _5Lorentzian(x, amp: list, cen: list, wid1, wid2, wid3, wid4, wid5):
@@ -123,7 +125,7 @@ def plot_spectral_comparison(path: str, method: str, compounds: list, solvent: s
     plt.show()
 
 
-def plot_spectral_solvent(path: str, solvents: list, compound: str, method: str, save=False) -> None:
+def plot_spectral_solvent(path: str, solvents: list, compound: str, method: str, save=False, ret_fig=False):
     """_summary_
 
     Args:
@@ -168,43 +170,93 @@ def plot_spectral_solvent(path: str, solvents: list, compound: str, method: str,
     if save == True:
         fig.savefig(f'solvents_{compound}_{method}.png')
 
+    # Для построения спектров вместе с диаграммой МО
+    if ret_fig == True:
+        plt.close(fig)
+        return np.array([x_range, _5Lorentzian(x_range, y, x, **wid_dict)]), data.moenergies, data.etsecs, x, y
+
+    plt.show()
+
+
+def plot_mo() -> None:
+
+    #fig, axs = plt.subplots(1, 2, figsize=(9, 3), sharey=True)
+    # gs = GridSpec(1, 2, width_ratios=None, wspace=0)
+    # ax1 = fig.add_subplot(gs[0, 0])
+    # ax2 = fig.add_subplot(gs[0,1])
+
+    fig = plt.figure(figsize=(15, 10), layout='constrained')
+    axs = fig.subplot_mosaic([["spectra", "mo_diagram"]])
+
+    data, mo_data, transition_data, x, y = plot_spectral_solvent(path, solvent_parse_lst, 'mc1', 'm062x', ret_fig=True)
+    
+
+    count_state = 1
+    for x_val, y_val in zip(x, y):
+        axs['spectra'].plot([x_val, x_val], [0, y_val], color='black')
+        axs['spectra'].text(x_val, 0, f'{count_state}', 
+                            bbox=dict(facecolor='white', alpha=1, edgecolor='white'))
+        count_state += 1
+
+    axs['spectra'].plot(*data, color='black')
+    axs['spectra'].set(**{'xlabel': 'Wave lenght / $nm$', 'ylabel': 'Oscillator strenght', 
+                          'title': 'Absorption spectra'})
+    
+    trans_1 = transition_data[0][0]
+    print(transition_data[1])
+
+    diagram = ED()
+    count_trans = 0
+    for etrans in transition_data:
+        new_col = True
+
+        for trans in etrans:
+            if new_col:
+                diagram.add_level(np.round(mo_data[0][trans[0][0]], 4), 
+                                  left_text=f'MO #{trans[0][0]}', top_text='')
+            else:
+                diagram.add_level(np.round(mo_data[0][trans[0][0]], 4), left_text=f'MO #{trans[0][0]}', position='l')
+
+            start_id = count_trans
+            count_trans += 1
+
+            diagram.add_level(np.round(mo_data[0][trans[1][0]], 4), left_text=f'MO #{trans[1][0]}', position='l')
+
+            end_id = count_trans
+            count_trans += 1
+
+            diagram.add_link(start_id, end_id, line_order=2)
+            # diagram.add_arrow(start_id, end_id, position='center', text=None)
+            # diagram.add_arrow(np.round(mo_data[0][trans[0][0]], 4), 
+            #                   np.round(mo_data[0][trans[1][0]], 4), position='center')
+            new_col =False
+    
+    # axs['spectra'].set(**{'xlim':})
+    
+    # diagram.offset *= 1.5
+    
+    diagram.plot(ylabel="Energy / $eV$", 
+                 show_IDs=False, ax=axs['mo_diagram'])
+    diagram.fig.set_figheight(20)
+    diagram.ax.axes.get_xaxis().set_visible(True)
+    
+    diagram.ax.spines['bottom'].set_visible(True)
+    diagram.ax.set_ylim(-10, 2)
+    diagram.ax.plot([2, 2], [-5, 2])
+    diagram.fig.show()
     plt.show()
 
 
 def main():
-    global method_parse_lst
+    global method_parse_lst, solvent_parse_lst, path
     method_parse_lst = ['b3lyp', 'm062x', 'pbe0']
     solvent_parse_lst = ['acetone', 'acetonitrile', 'chloroform']
     path = '/home/daniil_artamonov/hpc4_kurchatov/diploma_gaussian'
     filename = path + '/mc1_acetone/' + 'mc1_s1_b3lyp.log'
 
-    plot_spectral_solvent(path, solvent_parse_lst, 'sp1', 'm062x')
+    # plot_spectral_solvent(path, solvent_parse_lst, 'sp1', 'm062x')
+    plot_mo()
 
-    # parser = cclib.io.ccopen(filename)
-    # data = parser.parse()
-
-    # print(data.etsecs)
-
-    # global x_nm
-    # x_nm = np.power(data.etenergies, -1) * np.power(10, 7)
-
-    # global y_os
-    # y_os = data.etoscs
-
-    # fig, ax = plt.subplots()
-
-    # for x_nm_val, y_os_val in zip(x_nm, y_os):
-    #     ax.plot([x_nm_val, x_nm_val], [0, y_os_val], color='black')
-
-
-    # x_range = np.linspace(x_nm.min() * 0.9, x_nm.max() * 1.1, num=1000)
-
-    # wid_dict = {'wid1': 10, 'wid2': 10, 'wid3': 10, 'wid4': 10, 'wid5': 10}
-
-    # ax.plot(x_range, _5Lorentzian(x_range, **wid_dict), '--', color='red', label='mc1_acetone')
-    # ax.set(**{'xlim': (x_range.min(), x_range.max()), 'title': 'Absorption spectra'})
-
-    # plt.show()
 
 if __name__ == '__main__':
     main()

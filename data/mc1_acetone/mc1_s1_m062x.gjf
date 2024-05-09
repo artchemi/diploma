@@ -1,0 +1,12 @@
+%nprocshared=24
+%mem=20GB
+%oldchk=mc1_gs_m062x.chk
+%chk=mc1_s1_m062x.chk
+#p M062X/def2TZVP SCRF(PCM,Solvent=acetone) TD(Singlets,NStates=5, root=1) integral=ultrafine opt guess=(read) geom=(allcheck) gfinput 
+
+
+
+
+
+
+

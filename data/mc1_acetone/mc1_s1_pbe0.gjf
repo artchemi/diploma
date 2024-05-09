@@ -1,0 +1,12 @@
+%nprocshared=24
+%mem=20GB
+%oldchk=mc1_gs_pbe0.chk
+%chk=mc1_s1_pbe0.chk
+#p PBE1PBE/def2TZVP EmpiricalDispersion=GD3BJ SCRF(PCM,Solvent=acetone) TD(Singlets,NStates=5, root=1) opt guess=(read) geom=(allcheck) gfinput
+
+
+
+
+
+
+
