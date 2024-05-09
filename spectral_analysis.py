@@ -30,11 +30,12 @@ def _5Lorentzian(x, amp: list, cen: list, wid1, wid2, wid3, wid4, wid5):
             (amp[4]*wid5**2/((x-cen[4])**2+wid5**2))
 
 
-def plot_spectral_methods(path: str, compound: str, solvent: str, energy_type: str) -> None:
+def plot_spectral_methods(path: str, methods: list, compound: str, solvent: str, energy_type: str) -> None:
     """График испускания/поглощения для одной молекулы 
     в одном растворителе, но с разными уровнями теории.
 
     Args:
+        methods (list): Список из уровней теории
         path (str): Путь до папки с результатами
         compound (str): Молекула для анализа (mc1, mc2, sp1, sp2)
         solvent (str): Растворитель (acetone, acetonitrile, chloroform, noscrf?)
@@ -48,7 +49,7 @@ def plot_spectral_methods(path: str, compound: str, solvent: str, energy_type: s
 
     wid_dict = {'wid1': 10, 'wid2': 10, 'wid3': 10, 'wid4': 10, 'wid5': 10}
 
-    for method, color in zip(method_parse_lst, palette):
+    for method, color in zip(methods, palette):
         filename = path + f'/{compound}_{solvent}/' + f'{compound}_s1_{method}.log'
         parser = cclib.io.ccopen(filename)
         data = parser.parse()
@@ -87,9 +88,9 @@ def plot_spectral_comparison(path: str, method: str, compounds: list, solvent: s
 
     wid_dict = {'wid1': 10, 'wid2': 10, 'wid3': 10, 'wid4': 10, 'wid5': 10}
 
-    color = ['red', 'blue']
+    palette = ['red', 'blue']
 
-    for compound, color in zip(compounds, color):
+    for compound, color in zip(compounds, palette):
         filename = path + f'/{compound}_{solvent}/' + f'{compound}_s1_{method}.log'
 
         parser = cclib.io.ccopen(filename)
@@ -122,8 +123,7 @@ def plot_spectral_comparison(path: str, method: str, compounds: list, solvent: s
     plt.show()
 
 
-
-def plot_spectral_solvent(path: str, compound: str, method: str) -> None:
+def plot_spectral_solvent(path: str, solvents: list, compound: str, method: str, save=False) -> None:
     """_summary_
 
     Args:
@@ -134,6 +134,42 @@ def plot_spectral_solvent(path: str, compound: str, method: str) -> None:
     fig, ax = plt.subplots()
     palette = ['red', 'green', 'blue']  # добавить палитру
 
+    x_range = np.linspace(200, 800, num=1000)
+
+    wid_dict = {'wid1': 10, 'wid2': 10, 'wid3': 10, 'wid4': 10, 'wid5': 10}
+
+    for solvent, color in zip(solvents, palette):
+        filename = path + f'/{compound}_{solvent}/' + f'{compound}_s1_{method}.log'
+
+        parser = cclib.io.ccopen(filename)
+        data = parser.parse()
+
+        x = np.power(data.etenergies, -1) * np.power(10, 7)
+        y = data.etoscs
+
+        for x_val, y_val in zip(x, y):
+            ax.plot([x_val, x_val], [0, y_val], color=color)
+
+        ax.plot(x_range, _5Lorentzian(x_range, y, x, **wid_dict), color=color, label=solvent)
+
+        if method == 'b3lyp':
+            label = 'CAM-B3LYP'
+        elif method == 'pbe0':
+            label = 'PBE0'
+        else:
+            label = 'M06-2X'
+
+        ax.set(**{'xlim': (x_range.min(), x_range.max()), 'title': f'Absorption spectra ({label}, {compound})', 
+              'xlabel': 'Wave lenght, nm', 'ylabel': 'Oscillator strenght'})
+        
+    plt.grid()
+    plt.legend()
+
+    if save == True:
+        fig.savefig(f'solvents_{compound}_{method}.png')
+
+    plt.show()
+
 
 def main():
     global method_parse_lst
@@ -142,7 +178,7 @@ def main():
     path = '/home/daniil_artamonov/hpc4_kurchatov/diploma_gaussian'
     filename = path + '/mc1_acetone/' + 'mc1_s1_b3lyp.log'
 
-    plot_spectral_comparison(path, 'b3lyp', ['mc1', 'sp1'], 'acetonitrile')
+    plot_spectral_solvent(path, solvent_parse_lst, 'sp1', 'm062x')
 
     # parser = cclib.io.ccopen(filename)
     # data = parser.parse()
